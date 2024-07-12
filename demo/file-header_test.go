@@ -5,12 +5,12 @@ import (
 	"io"
 	"testing"
 
-	"github.com/ahuigo/gohttptool/file"
+	"github.com/ahuigo/gohttptool/filetool"
 )
 
 func TestCreateFileHeader(t *testing.T) {
 	content := []byte("hello world")
-	fd, err := file.CreateFileHeaderFromBytes("test.txt", content)
+	fd, err := filetool.CreateFileHeaderFromBytes("test.txt", content)
 	if err != nil {
 		t.Fatal(err)
 	}
