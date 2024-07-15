@@ -8,3 +8,6 @@
 [![Contributors](https://img.shields.io/github/contributors/ahuigo/gohttptool)](https://github.com/ahuigo/gohttptool/graphs/contributors)
 [![License](https://img.shields.io/github/license/ahuigo/gohttptool)](./LICENSE)
 
+## Features
+- [x] Build http request in golang
+- [x] Generate curl command for http request
