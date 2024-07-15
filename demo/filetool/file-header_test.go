@@ -19,7 +19,7 @@ func TestCreateFileHeader(t *testing.T) {
 		t.Fatal(err)
 	}
 	r, _ := io.ReadAll(fh)
-	if !bytes.Equal(r, content)  {
+	if !bytes.Equal(r, content) {
 		t.Fatalf("content not match: %s, %s\n", string(r), string(content))
 	}
 }

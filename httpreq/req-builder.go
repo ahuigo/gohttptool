@@ -70,7 +70,7 @@ func (r *request) buildURLParams(userURL string) (*url.URL, error) {
 	paramsArray := r.paramsList
 	if strings.HasPrefix(userURL, "/") {
 		userURL = "http://localhost" + userURL
-	}else if userURL == ""{
+	} else if userURL == "" {
 		userURL = "http://unknown"
 	}
 	parsedURL, err := url.Parse(userURL)

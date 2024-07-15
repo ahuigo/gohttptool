@@ -3,6 +3,7 @@ package httpreq
 import (
 	"context"
 	"net/http"
+	"net/textproto"
 )
 
 type ContentType string
@@ -17,9 +18,9 @@ const (
 
 type fileHeader struct {
 	Filename string
-	// Header   textproto.MIMEHeader
-	Size    int64
-	content []byte
+	Header   textproto.MIMEHeader
+	Size     int64
+	content  []byte
 	// tmpfile   string
 	// tmpoff    int64
 	// tmpshared bool
@@ -52,24 +53,14 @@ func R() *request {
 	}
 }
 
-func (r *request) SetAuth(key, value string) {
-	r.rawreq.SetBasicAuth(key, value)
-}
-
-func (r *request) SetHeader(key, value string) {
+/******************header *************************/
+func (r *request) SetHeader(key, value string) *request {
 	r.rawreq.Header.Set(key, value)
-}
-func (r *request) AddFile(fieldname, path string) *request {
-	r.files[fieldname] = path
 	return r
 }
 
-func (r *request) AddFileHeader(fieldname, filename string, content []byte) *request {
-	r.fileHeaders[fieldname] = fileHeader{
-		Filename: filename,
-		content: content,
-		Size: int64(len(content)),
-	}
+func (r *request) SetAuthBasic(username, password string) *request {
+	r.rawreq.SetBasicAuth(username, password)
 	return r
 }
 
@@ -88,6 +79,21 @@ func (r *request) AddCookieKV(name, value string) *request {
 	return r
 }
 
+/************** file **********************/
+func (r *request) AddFile(fieldname, path string) *request {
+	r.files[fieldname] = path
+	return r
+}
+
+func (r *request) AddFileHeader(fieldname, filename string, content []byte) *request {
+	r.fileHeaders[fieldname] = fileHeader{
+		Filename: filename,
+		content:  content,
+		Size:     int64(len(content)),
+	}
+	return r
+}
+
 func (r *request) SetUrl(url string) *request {
 	r.url = url
 	return r
@@ -100,6 +106,11 @@ func (r *request) SetMethod(method string) *request {
 
 func (r *request) SetParams(params map[string]string) *request {
 	r.params = params
+	return r
+}
+
+func (r *request) SetData(data map[string]string) *request {
+	r.datas = data
 	return r
 }
 

@@ -19,7 +19,7 @@ func CreateFileHeaderFromFile(filePath string) (*multipart.FileHeader, error) {
 	defer file.Close()
 	if content, err := io.ReadAll(file); err == nil {
 		return CreateFileHeaderFromBytes(filename, content)
-	}else{
+	} else {
 		return nil, err
 	}
 }
