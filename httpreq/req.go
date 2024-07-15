@@ -64,6 +64,11 @@ func (r *request) SetAuthBasic(username, password string) *request {
 	return r
 }
 
+func (r *request) SetAuthBearer(token string) *request {
+	r.rawreq.Header.Set("Authorization", "Bearer "+token)
+	return r
+}
+
 func (r *request) AddCookies(cookies []*http.Cookie) *request {
 	for _, cookie := range cookies {
 		r.rawreq.AddCookie(cookie)
@@ -99,8 +104,9 @@ func (r *request) SetUrl(url string) *request {
 	return r
 }
 
-func (r *request) SetMethod(method string) *request {
+func (r *request) SetReq(method string, url string) *request {
 	r.rawreq.Method = method
+	r.url = url
 	return r
 }
 

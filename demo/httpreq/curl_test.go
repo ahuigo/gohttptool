@@ -16,6 +16,7 @@ func TestCurl(t *testing.T) {
 		AddCookieKV("count", "1").
 		AddFileHeader("file", "test.txt", []byte("hello world")).
 		AddFileHeader("file2", "test.txt", []byte("hello world2")).
+		SetReq("GET", "/path").
 		ToCurl()
 	if err != nil {
 		t.Fatal(err)
