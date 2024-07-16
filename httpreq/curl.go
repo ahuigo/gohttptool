@@ -12,10 +12,10 @@ import (
 	"github.com/ahuigo/gohttptool/shell"
 )
 
-func (r *request) FromCurl(curl string) {
+func (r *RequestBuilder) FromCurl(curl string) {
 
 }
-func (r *request) ToCurl() (curl string, err error) {
+func (r *RequestBuilder) ToCurl() (curl string, err error) {
 	if httpreq, err := r.ToRequest(); err != nil {
 		return "", err
 	} else {

@@ -13,14 +13,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (session *request) ToRequest() (*http.Request, error) {
-	var dataType = ContentType(session.rawreq.Header.Get("Content-Type"))
-	var origurl = session.url
-	if len(session.files) > 0 || len(session.fileHeaders) > 0 {
+func (rb *RequestBuilder) ToRequest() (*http.Request, error) {
+	var dataType = ContentType(rb.rawreq.Header.Get("Content-Type"))
+	var origurl = rb.url
+	if len(rb.files) > 0 || len(rb.fileHeaders) > 0 {
 		dataType = ContentTypeFormData
 	}
 
-	URL, err := session.buildURLParams(origurl)
+	URL, err := rb.buildURLParams(origurl)
 	if err != nil {
 		return nil, err
 	}
@@ -31,26 +31,26 @@ func (session *request) ToRequest() (*http.Request, error) {
 
 	switch dataType {
 	case ContentTypeFormEncode:
-		if len(session.datas) > 0 {
-			formEncodeValues := session.buildFormEncode(session.datas)
-			session.setBodyFormEncode(formEncodeValues)
+		if len(rb.datas) > 0 {
+			formEncodeValues := rb.buildFormEncode(rb.datas)
+			rb.setBodyFormEncode(formEncodeValues)
 		}
 	case ContentTypeFormData:
 		// multipart/form-data
-		session.buildFilesAndForms()
+		rb.buildFilesAndForms()
 	}
 
-	if session.rawreq.Body == nil && session.rawreq.Method != "GET" {
-		session.rawreq.Body = http.NoBody
+	if rb.rawreq.Body == nil && rb.rawreq.Method != "GET" {
+		rb.rawreq.Body = http.NoBody
 	}
 
-	session.rawreq.URL = URL
+	rb.rawreq.URL = URL
 
-	return session.rawreq, nil
+	return rb.rawreq, nil
 }
 
 // build post Form encode
-func (session *request) buildFormEncode(datas map[string]string) (Forms url.Values) {
+func (rb *RequestBuilder) buildFormEncode(datas map[string]string) (Forms url.Values) {
 	Forms = url.Values{}
 	for key, value := range datas {
 		Forms.Add(key, value)
@@ -59,15 +59,15 @@ func (session *request) buildFormEncode(datas map[string]string) (Forms url.Valu
 }
 
 // set form urlencode
-func (session *request) setBodyFormEncode(Forms url.Values) {
+func (rb *RequestBuilder) setBodyFormEncode(Forms url.Values) {
 	data := Forms.Encode()
-	session.rawreq.Body = io.NopCloser(strings.NewReader(data))
-	session.rawreq.ContentLength = int64(len(data))
+	rb.rawreq.Body = io.NopCloser(strings.NewReader(data))
+	rb.rawreq.ContentLength = int64(len(data))
 }
 
-func (r *request) buildURLParams(userURL string) (*url.URL, error) {
-	params := r.params
-	paramsArray := r.paramsList
+func (rb *RequestBuilder) buildURLParams(userURL string) (*url.URL, error) {
+	params := rb.params
+	paramsArray := rb.paramsList
 	if strings.HasPrefix(userURL, "/") {
 		userURL = "http://localhost" + userURL
 	} else if userURL == "" {
@@ -93,10 +93,10 @@ func (r *request) buildURLParams(userURL string) (*url.URL, error) {
 	return parsedURL, nil
 }
 
-func (r *request) buildFilesAndForms() error {
-	files := r.files
-	datas := r.datas
-	filesHeaders := r.fileHeaders
+func (rb *RequestBuilder) buildFilesAndForms() error {
+	files := rb.files
+	datas := rb.datas
+	filesHeaders := rb.fileHeaders
 	//handle file multipart
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
@@ -136,8 +136,8 @@ func (r *request) buildFilesAndForms() error {
 	w.Close()
 	// set file header example:
 	// "Content-Type": "multipart/form-data; boundary=------------------------7d87eceb5520850c",
-	r.rawreq.Body = io.NopCloser(bytes.NewReader(b.Bytes()))
-	r.rawreq.ContentLength = int64(b.Len())
-	r.rawreq.Header.Set("Content-Type", w.FormDataContentType())
+	rb.rawreq.Body = io.NopCloser(bytes.NewReader(b.Bytes()))
+	rb.rawreq.ContentLength = int64(b.Len())
+	rb.rawreq.Header.Set("Content-Type", w.FormDataContentType())
 	return nil
 }

@@ -26,7 +26,7 @@ type fileHeader struct {
 	// tmpshared bool
 }
 
-type request struct {
+type RequestBuilder struct {
 	rawreq      *http.Request
 	url         string
 	files       map[string]string     // field -> path
@@ -36,8 +36,8 @@ type request struct {
 	paramsList  map[string][]string   // key -> value list
 }
 
-func R() *request {
-	return &request{
+func R() *RequestBuilder {
+	return &RequestBuilder{
 		rawreq: &http.Request{
 			Method:     "GET",
 			Header:     make(http.Header),
@@ -54,28 +54,28 @@ func R() *request {
 }
 
 /******************header *************************/
-func (r *request) SetHeader(key, value string) *request {
+func (r *RequestBuilder) SetHeader(key, value string) *RequestBuilder {
 	r.rawreq.Header.Set(key, value)
 	return r
 }
 
-func (r *request) SetAuthBasic(username, password string) *request {
+func (r *RequestBuilder) SetAuthBasic(username, password string) *RequestBuilder {
 	r.rawreq.SetBasicAuth(username, password)
 	return r
 }
 
-func (r *request) SetAuthBearer(token string) *request {
+func (r *RequestBuilder) SetAuthBearer(token string) *RequestBuilder {
 	r.rawreq.Header.Set("Authorization", "Bearer "+token)
 	return r
 }
 
-func (r *request) AddCookies(cookies []*http.Cookie) *request {
+func (r *RequestBuilder) AddCookies(cookies []*http.Cookie) *RequestBuilder {
 	for _, cookie := range cookies {
 		r.rawreq.AddCookie(cookie)
 	}
 	return r
 }
-func (r *request) AddCookieKV(name, value string) *request {
+func (r *RequestBuilder) AddCookieKV(name, value string) *RequestBuilder {
 	cookie := &http.Cookie{
 		Name:  name,
 		Value: value,
@@ -85,12 +85,12 @@ func (r *request) AddCookieKV(name, value string) *request {
 }
 
 /************** file **********************/
-func (r *request) AddFile(fieldname, path string) *request {
+func (r *RequestBuilder) AddFile(fieldname, path string) *RequestBuilder {
 	r.files[fieldname] = path
 	return r
 }
 
-func (r *request) AddFileHeader(fieldname, filename string, content []byte) *request {
+func (r *RequestBuilder) AddFileHeader(fieldname, filename string, content []byte) *RequestBuilder {
 	r.fileHeaders[fieldname] = fileHeader{
 		Filename: filename,
 		content:  content,
@@ -99,37 +99,37 @@ func (r *request) AddFileHeader(fieldname, filename string, content []byte) *req
 	return r
 }
 
-func (r *request) SetUrl(url string) *request {
+func (r *RequestBuilder) SetUrl(url string) *RequestBuilder {
 	r.url = url
 	return r
 }
 
-func (r *request) SetReq(method string, url string) *request {
+func (r *RequestBuilder) SetReq(method string, url string) *RequestBuilder {
 	r.rawreq.Method = method
 	r.url = url
 	return r
 }
 
-func (r *request) SetParams(params map[string]string) *request {
+func (r *RequestBuilder) SetParams(params map[string]string) *RequestBuilder {
 	r.params = params
 	return r
 }
 
-func (r *request) SetData(data map[string]string) *request {
+func (r *RequestBuilder) SetData(data map[string]string) *RequestBuilder {
 	r.datas = data
 	return r
 }
 
-func (r *request) GetRawreq() *http.Request {
+func (r *RequestBuilder) GetRawreq() *http.Request {
 	return r.rawreq
 }
 
-func (r *request) SetCtx(ctx context.Context) *request {
+func (r *RequestBuilder) SetCtx(ctx context.Context) *RequestBuilder {
 	r.rawreq = r.rawreq.WithContext(ctx)
 	return r
 }
 
-func (r *request) EnableTrace(ctx context.Context) *request {
+func (r *RequestBuilder) EnableTrace(ctx context.Context) *RequestBuilder {
 	trace := clientTraceNew(r.rawreq.Context())
 	r.rawreq = r.rawreq.WithContext(trace.ctx)
 	return r
