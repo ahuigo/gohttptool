@@ -20,12 +20,12 @@ func (r *RequestBuilder) ToCurl() (curl string, err error) {
 	if httpreq, err := r.ToRequest(); err != nil {
 		return "", err
 	} else {
-		curl := buildCurlRequest(httpreq, nil)
+		curl := BuildCurlCommand(httpreq, nil)
 		return curl, nil
 	}
 }
 
-func buildCurlRequest(req *http.Request, httpCookiejar http.CookieJar) (curlString string) {
+func BuildCurlCommand(req *http.Request, httpCookiejar http.CookieJar) (curlString string) {
 	buf := acquireBuffer()
 	defer releaseBuffer(buf)
 

@@ -103,11 +103,11 @@ func (resp *httpRes) Body() []byte {
 }
 
 func (resp *httpRes) Text() string {
-	return string(resp.body)
+	return string(resp.Body())
 }
 
 func (resp *httpRes) Size() int {
-	return len(resp.body)
+	return len(resp.Body())
 }
 
 func (resp *httpRes) RaiseForStatus() (code int, err error) {
