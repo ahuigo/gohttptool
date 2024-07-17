@@ -1,9 +1,12 @@
 package httpreq
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/textproto"
+	"net/url"
 )
 
 type ContentType string
@@ -27,13 +30,15 @@ type fileHeader struct {
 }
 
 type RequestBuilder struct {
-	rawreq      *http.Request
-	url         string
+	rawreq *http.Request
+	url    string
+
+	queryParam  url.Values
+	formData    url.Values
+	isMultiPart bool
+	json        any
 	files       map[string]string     // field -> path
 	fileHeaders map[string]fileHeader // field -> contents
-	datas       map[string]string     // key -> value
-	params      map[string]string     // key -> value
-	paramsList  map[string][]string   // key -> value list
 }
 
 func R() *RequestBuilder {
@@ -45,11 +50,11 @@ func R() *RequestBuilder {
 			ProtoMajor: 1,
 			ProtoMinor: 1,
 		},
+		queryParam: make(url.Values),
+		formData:   make(map[string][]string),
+		// paramsList:  make(map[string][]string),
 		files:       make(map[string]string),
 		fileHeaders: make(map[string]fileHeader),
-		datas:       make(map[string]string),
-		params:      make(map[string]string),
-		paramsList:  make(map[string][]string),
 	}
 }
 
@@ -69,6 +74,11 @@ func (r *RequestBuilder) SetAuthBearer(token string) *RequestBuilder {
 	return r
 }
 
+func (r *RequestBuilder) SetContentType(ct ContentType) *RequestBuilder {
+	r.rawreq.Header.Set("Content-Type", string(ct))
+	return r
+}
+
 func (r *RequestBuilder) AddCookies(cookies []*http.Cookie) *RequestBuilder {
 	for _, cookie := range cookies {
 		r.rawreq.AddCookie(cookie)
@@ -84,6 +94,7 @@ func (r *RequestBuilder) AddCookieKV(name, value string) *RequestBuilder {
 	return r
 }
 
+/************** params **********************/
 /************** file **********************/
 func (r *RequestBuilder) AddFile(fieldname, path string) *RequestBuilder {
 	r.files[fieldname] = path
@@ -110,16 +121,67 @@ func (r *RequestBuilder) SetReq(method string, url string) *RequestBuilder {
 	return r
 }
 
-func (r *RequestBuilder) SetParams(params map[string]string) *RequestBuilder {
-	r.params = params
+/************** params **********************/
+func (r *RequestBuilder) SetQueryParams(params map[string]string) *RequestBuilder {
+	for p, v := range params {
+		r.SetQueryParam(p, v)
+	}
+	return r
+}
+func (r *RequestBuilder) SetQueryParam(param, value string) *RequestBuilder {
+	r.queryParam.Set(param, value)
 	return r
 }
 
-func (r *RequestBuilder) SetData(data map[string]string) *RequestBuilder {
-	r.datas = data
+func (r *RequestBuilder) SetQueryParamsFromValues(params url.Values) *RequestBuilder {
+	for p, v := range params {
+		for _, pv := range v {
+			r.queryParam.Add(p, pv)
+		}
+	}
 	return r
 }
 
+/************** body(bytes) **********************/
+func (r *RequestBuilder) SetBody(body []byte) *RequestBuilder {
+	r.rawreq.Body = io.NopCloser(bytes.NewReader(body))
+	return r
+}
+
+/************** body(form) **********************/
+// Set Form data(encode or multipart)
+func (r *RequestBuilder) SetIsMultiPart(b bool) *RequestBuilder {
+	r.isMultiPart = b
+	return r
+}
+func (r *RequestBuilder) SetFormData(data map[string]string) *RequestBuilder {
+	for k, v := range data {
+		r.formData.Set(k, v)
+	}
+	return r
+}
+
+// SetFormDataFromValues method appends multiple form parameters with multi-value
+//
+//	SetFormDataFromValues(url.Values{"words": []string{"book", "glass", "pencil"},})
+func (r *RequestBuilder) SetFormDataFromValues(data url.Values) *RequestBuilder {
+	for k, v := range data {
+		for _, kv := range v {
+			r.formData.Add(k, kv)
+		}
+	}
+	return r
+}
+
+/************** body(json) **********************/
+func (r *RequestBuilder) SetJson(data any) *RequestBuilder {
+	r.json = data
+	return r
+}
+
+/************** body(plain) **********************/
+
+/************** utils **********************/
 func (r *RequestBuilder) GetRawreq() *http.Request {
 	return r.rawreq
 }

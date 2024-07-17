@@ -15,6 +15,7 @@ import (
 func (r *RequestBuilder) FromCurl(curl string) {
 
 }
+
 func (r *RequestBuilder) ToCurl() (curl string, err error) {
 	if httpreq, err := r.ToRequest(); err != nil {
 		return "", err
@@ -24,36 +25,39 @@ func (r *RequestBuilder) ToCurl() (curl string, err error) {
 	}
 }
 
-func buildCurlRequest(req *http.Request, httpCookiejar http.CookieJar) (curl string) {
+func buildCurlRequest(req *http.Request, httpCookiejar http.CookieJar) (curlString string) {
+	buf := acquireBuffer()
+	defer releaseBuffer(buf)
+
 	// 1. Generate curl raw headers
-	curl = "curl -X " + req.Method + " "
+	buf.WriteString("curl -X " + req.Method + " ")
 	// req.Host + req.URL.Path + "?" + req.URL.RawQuery + " " + req.Proto + " "
 	headers := dumpCurlHeaders(req)
 	for _, kv := range *headers {
-		curl += `-H ` + shell.Quote(kv[0]+": "+kv[1]) + ` `
+		buf.WriteString(`-H ` + shell.Quote(kv[0]+": "+kv[1]) + ` `)
 	}
 
 	// 2. Generate curl cookies
 	if cookieJar, ok := httpCookiejar.(*cookiejar.Jar); ok {
 		cookies := cookieJar.Cookies(req.URL)
 		if len(cookies) > 0 {
-			curl += ` -H ` + shell.Quote(dumpCurlCookies(cookies)) + " "
+			buf.WriteString(` -H ` + shell.Quote(dumpCurlCookies(cookies)) + " ")
 		}
 	}
 
 	// 3. Generate curl body
 	if req.Body != nil {
-		buf, _ := io.ReadAll(req.Body)
-		req.Body = io.NopCloser(bytes.NewBuffer(buf)) // important!!
-		curl += `-d ` + shell.Quote(string(buf))
+		buf2, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewBuffer(buf2)) // important!!
+		buf.WriteString(`-d ` + shell.Quote(string(buf2)))
 	}
 
 	urlString := shell.Quote(req.URL.String())
 	if urlString == "''" {
 		urlString = "'http://unexecuted-request'"
 	}
-	curl += " " + urlString
-	return curl
+	buf.WriteString(" " + urlString)
+	return buf.String()
 }
 
 // dumpCurlCookies dumps cookies to curl format
@@ -64,6 +68,7 @@ func dumpCurlCookies(cookies []*http.Cookie) string {
 		sb.WriteString(cookie.Name + "=" + url.QueryEscape(cookie.Value) + "&")
 	}
 	return strings.TrimRight(sb.String(), "&")
+
 }
 
 // dumpCurlHeaders dumps headers to curl format

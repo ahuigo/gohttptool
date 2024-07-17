@@ -16,8 +16,15 @@ import (
 func (rb *RequestBuilder) ToRequest() (*http.Request, error) {
 	var dataType = ContentType(rb.rawreq.Header.Get("Content-Type"))
 	var origurl = rb.url
-	if len(rb.files) > 0 || len(rb.fileHeaders) > 0 {
+	if rb.isMultiPart || len(rb.files) > 0 || len(rb.fileHeaders) > 0 {
 		dataType = ContentTypeFormData
+	} else if rb.json != nil {
+		dataType = ContentTypeJson
+	} else if len(rb.formData) > 0 {
+		dataType = ContentTypeFormEncode
+	}
+	if dataType != "" {
+		rb.rawreq.Header.Set("Content-Type", string(dataType))
 	}
 
 	URL, err := rb.buildURLParams(origurl)
@@ -30,14 +37,16 @@ func (rb *RequestBuilder) ToRequest() (*http.Request, error) {
 	}
 
 	switch dataType {
+	case ContentTypeJson:
+		rb.setBodyJson()
 	case ContentTypeFormEncode:
-		if len(rb.datas) > 0 {
-			formEncodeValues := rb.buildFormEncode(rb.datas)
-			rb.setBodyFormEncode(formEncodeValues)
+		if len(rb.formData) > 0 {
+			rb.setBodyFormEncode(rb.formData)
 		}
 	case ContentTypeFormData:
 		// multipart/form-data
 		rb.buildFilesAndForms()
+	default:
 	}
 
 	if rb.rawreq.Body == nil && rb.rawreq.Method != "GET" {
@@ -49,25 +58,26 @@ func (rb *RequestBuilder) ToRequest() (*http.Request, error) {
 	return rb.rawreq, nil
 }
 
-// build post Form encode
-func (rb *RequestBuilder) buildFormEncode(datas map[string]string) (Forms url.Values) {
-	Forms = url.Values{}
-	for key, value := range datas {
-		Forms.Add(key, value)
-	}
-	return Forms
-}
-
 // set form urlencode
-func (rb *RequestBuilder) setBodyFormEncode(Forms url.Values) {
-	data := Forms.Encode()
+func (rb *RequestBuilder) setBodyFormEncode(formData url.Values) {
+	data := formData.Encode()
 	rb.rawreq.Body = io.NopCloser(strings.NewReader(data))
 	rb.rawreq.ContentLength = int64(len(data))
 }
 
+func (rb *RequestBuilder) setBodyJson() {
+	bodyBuf, err := noescapeJSONMarshalIndent(&rb.json)
+	if err == nil {
+		prtBodyBytes := bodyBuf.Bytes()
+		plen := len(prtBodyBytes)
+		if plen > 0 && prtBodyBytes[plen-1] == '\n' {
+			prtBodyBytes = prtBodyBytes[:plen-1]
+		}
+		rb.rawreq.Body = io.NopCloser(bytes.NewReader(prtBodyBytes))
+	}
+}
+
 func (rb *RequestBuilder) buildURLParams(userURL string) (*url.URL, error) {
-	params := rb.params
-	paramsArray := rb.paramsList
 	if strings.HasPrefix(userURL, "/") {
 		userURL = "http://localhost" + userURL
 	} else if userURL == "" {
@@ -81,13 +91,9 @@ func (rb *RequestBuilder) buildURLParams(userURL string) (*url.URL, error) {
 
 	values := parsedURL.Query()
 
-	for key, value := range params {
-		values.Set(key, value)
-	}
-	for key, vals := range paramsArray {
-		for _, v := range vals {
-			values.Add(key, v)
-		}
+	for key, value := range rb.queryParam {
+		values[key] = value
+		// values.Set(key, value[0])
 	}
 	parsedURL.RawQuery = values.Encode()
 	return parsedURL, nil
@@ -95,14 +101,16 @@ func (rb *RequestBuilder) buildURLParams(userURL string) (*url.URL, error) {
 
 func (rb *RequestBuilder) buildFilesAndForms() error {
 	files := rb.files
-	datas := rb.datas
+	formData := rb.formData
 	filesHeaders := rb.fileHeaders
 	//handle file multipart
 	var b bytes.Buffer
 	w := multipart.NewWriter(&b)
 
-	for k, v := range datas {
-		w.WriteField(k, v)
+	for k, v := range formData {
+		for _, vv := range v {
+			w.WriteField(k, vv)
+		}
 	}
 
 	for field, path := range files {
