@@ -58,6 +58,12 @@ func R() *RequestBuilder {
 	}
 }
 
+/******************host*************************/
+func (r *RequestBuilder) SetHost(host string) *RequestBuilder {
+	r.rawreq.Host = host
+	return r
+}
+
 /******************header *************************/
 func (r *RequestBuilder) SetHeader(key, value string) *RequestBuilder {
 	r.rawreq.Header.Set(key, value)
@@ -179,7 +185,7 @@ func (r *RequestBuilder) SetJson(data any) *RequestBuilder {
 	return r
 }
 
-/************** body(plain) **********************/
+/************** body(plain) SetBody(bytes) **********************/
 
 /************** utils **********************/
 func (r *RequestBuilder) GetRawreq() *http.Request {
