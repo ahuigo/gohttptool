@@ -17,7 +17,7 @@ func TestPostFile(t *testing.T) {
 		AddFileHeader("file", "test.txt", []byte("hello world")).
 		AddFile("file2", getTestDataPath("a.txt")).
 		SetReq("GET", "/path").
-		ToCurl()
+		GenCurlCommand()
 	if err != nil {
 		t.Fatal(err)
 	}

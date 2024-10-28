@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (rb *RequestBuilder) ToRequest() (*http.Request, error) {
+func (rb *RequestBuilder) GenRequest() (*http.Request, error) {
 	var dataType = ContentType(rb.rawreq.Header.Get("Content-Type"))
 	var origurl = rb.url
 	if rb.isMultiPart || len(rb.files) > 0 || len(rb.fileHeaders) > 0 {

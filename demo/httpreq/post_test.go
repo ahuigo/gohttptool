@@ -14,7 +14,7 @@ func TestPostParams(t *testing.T) {
 	curl, err := httpreq.R().
 		SetQueryParams(map[string]string{"p": "1"}).
 		SetReq("POST", "http://local/post").
-		ToCurl()
+		GenCurlCommand()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestPostJson(t *testing.T) {
 	curl, err := httpreq.R().
 		SetJson(map[string]string{"name": "ahuigo"}).
 		SetReq("POST", "/path").
-		ToCurl()
+		GenCurlCommand()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestPostFormUrlEncode(t *testing.T) {
 	curl, err := httpreq.R().
 		SetFormData(map[string]string{"name": "Alex"}).
 		SetReq("POST", "http://local/post").
-		ToCurl()
+		GenCurlCommand()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestPostFormMultipart(t *testing.T) {
 		SetIsMultiPart(true).
 		SetFormData(map[string]string{"name": "Alex"}).
 		SetReq("POST", "http://local/post").
-		ToCurl()
+		GenCurlCommand()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +89,7 @@ func TestPostPlainData(t *testing.T) {
 		SetContentType(httpreq.ContentTypePlain).
 		SetBody([]byte("hello!")).
 		SetReq("POST", "http://local/post").
-		ToCurl()
+		GenCurlCommand()
 	if err != nil {
 		t.Fatal(err)
 	}

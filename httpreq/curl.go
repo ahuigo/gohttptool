@@ -16,16 +16,16 @@ func (r *RequestBuilder) FromCurl(curl string) {
 
 }
 
-func (r *RequestBuilder) ToCurl() (curl string, err error) {
-	if httpreq, err := r.ToRequest(); err != nil {
+func (r *RequestBuilder) GenCurlCommand() (curl string, err error) {
+	if httpreq, err := r.GenRequest(); err != nil {
 		return "", err
 	} else {
-		curl := BuildCurlCommand(httpreq, nil)
+		curl := GenCurlCommand(httpreq, nil)
 		return curl, nil
 	}
 }
 
-func BuildCurlCommand(req *http.Request, httpCookiejar http.CookieJar) (curlString string) {
+func GenCurlCommand(req *http.Request, httpCookiejar http.CookieJar) (curlString string) {
 	buf := acquireBuffer()
 	defer releaseBuffer(buf)
 
@@ -47,8 +47,7 @@ func BuildCurlCommand(req *http.Request, httpCookiejar http.CookieJar) (curlStri
 
 	// 3. Generate curl body
 	if req.Body != nil {
-		buf2, _ := io.ReadAll(req.Body)
-		req.Body = io.NopCloser(bytes.NewBuffer(buf2)) // important!!
+		buf2 := dumpReqBodyBytes(req)
 		buf.WriteString(`-d ` + shell.Quote(string(buf2)))
 	}
 
@@ -58,6 +57,15 @@ func BuildCurlCommand(req *http.Request, httpCookiejar http.CookieJar) (curlStri
 	}
 	buf.WriteString(" " + urlString)
 	return buf.String()
+}
+
+func dumpReqBodyBytes(req *http.Request) []byte {
+	if req.Body != nil {
+		buf, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewBuffer(buf)) // important!!
+		return buf
+	}
+	return nil
 }
 
 // dumpCurlCookies dumps cookies to curl format
