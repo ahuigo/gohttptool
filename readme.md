@@ -11,3 +11,43 @@
 ## Features
 - [x] Build http request in golang
 - [x] Generate curl command for http request
+
+## Unittest with gonic
+
+```
+
+func CreateTestCtx(req *http.Request) (resp *httptest.ResponseRecorder, ctx *gin.Context) {
+	resp = httptest.NewRecorder()
+	ctx, _ = gin.CreateTestContext(resp)
+	ctx.Request = req
+	return
+}
+
+func TestGonicApi(t *testing.T) {
+	// 1. build request
+	req, _ := httpreq.R().
+		SetQueryParams(map[string]string{
+			"job_id":   "1234",
+		}).
+		SetReq("GET", "http://any/api/v1/spark/job").
+		GenRequest()
+	curl := httpreq.GenCurlCommand(req, nil)
+	println(curl)
+	resp, ctx := CreateTestCtx(req)
+
+	// 2. execute
+	sparkServer := GetGonicSparkServer()
+	sparkServer.GetJobInfo(ctx)
+	if resp.Code != http.StatusOK {
+		errors := ctx.Errors.Errors()
+		fmt.Println("output", errors)
+		t.Errorf("Expect code 200, but get %d body:%v", resp.Code, resp.Body)
+	} else {
+        data := map[string]string{}
+		httpreq.BuildResponse(resp.Result()).Json(&data)
+		if data["status"] == "" {
+			t.Fatalf("Bad response: %v", data)
+		}
+	}
+}
+```
